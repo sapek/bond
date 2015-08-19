@@ -49,6 +49,10 @@
 
                     Start-FileDownload "http://iweb.dl.sourceforge.net/project/boost/boost-binaries/1.${env:BOND_BOOST}.0/boost_1_${env:BOND_BOOST}_0-msvc-${env:BOND_MSC_VER}.0-${env:BOND_MSC_BITS}.exe" -FileName boost.exe -Timeout 1200000
 
+                } else {
+
+                    $env:BOOST_LIBRARYDIR = "${env:BOOST_ROOT}/lib${env:BOND_MSC_BITS}-msvc-${env:BOND_MSC_VER}.0"
+
                 }
 
                 echo "Extracting Boost..."
@@ -56,8 +60,6 @@
                 .\boost.exe /DIR="${env:APPVEYOR_BUILD_FOLDER}\\boost_1_${env:BOND_BOOST}_0" /VERYSILENT
 
                 $env:BOOST_ROOT = "${env:APPVEYOR_BUILD_FOLDER}/boost_1_${env:BOND_BOOST}_0"
-
-                $env:BOOST_LIBRARYDIR = "${env:BOOST_ROOT}/lib${env:BOND_MSC_BITS}-msvc-${env:BOND_MSC_VER}.0"
 
             }
 
@@ -97,8 +99,6 @@
                 cd build
 
                 Wait-Process -name boost
-
-                dir "${env:BOOST_LIBRARYDIR}\\*.*"
 
                 cmake "-DBoost_ADDITIONAL_VERSIONS=1.${env:BOND_BOOST}.0" -G $env:BOND_CMAKE_GENERATOR ..
 
