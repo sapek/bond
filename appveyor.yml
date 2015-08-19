@@ -20,14 +20,18 @@
     environment:
         matrix:
             - BOND_BUILD: C++
-              BOND_VS: "Visual Studio 14 2015 Win64"
-              BOND_BOOST: 58
+              BOND_CMAKE_GENERATOR: "Visual Studio 14 2015 Win64"
+              BOND_MSC_VER: 14
+              BOND_MSC_BITS: 64
+              BOND_BOOST: 59
             - BOND_BUILD: C#
               BOND_OUTPUT: Properties
               BOND_CONFIG: Debug
             - BOND_BUILD: Doc
             - BOND_BUILD: C++
-              BOND_VS: "Visual Studio 12 2013"
+              BOND_CMAKE_GENERATOR: "Visual Studio 12 2013"
+              BOND_MSC_VER: 12
+              BOND_MSC_BITS: 32
               BOND_BOOST: 55
             - BOND_BUILD: C#
               BOND_OUTPUT: Fields
@@ -35,6 +39,28 @@
 
     install:
         - ps: >-
+            if ($env:BOND_BUILD -eq "C++") {
+
+                git submodule update --init
+
+                if (!(Test-Path boost.exe)) {
+
+                    echo "Downloading Boost 1.${env:BOND_BOOST} ..."
+
+                    Start-FileDownload "http://iweb.dl.sourceforge.net/project/boost/boost-binaries/1.${env:BOND_BOOST}.0/boost_1_${env:BOND_BOOST}_0-msvc-${env:BOND_MSC_VER}.0-${env:BOND_MSC_BITS}.exe" -FileName boost.exe -Timeout 1200000
+
+                }
+
+                echo "Extracting Boost..."
+
+                .\boost.exe /DIR="${env:APPVEYOR_BUILD_FOLDER}\\boost_1_${env:BOND_BOOST}_0" /VERYSILENT
+
+                $env:BOOST_ROOT = "${env:APPVEYOR_BUILD_FOLDER}/boost_1_${env:BOND_BOOST}_0"
+
+                $env:BOOST_LIBRARYDIR = "${env:BOND_ROOT}/lib${BOND_MSC_BITS}-msvc-${env:BOND_MSC_VER}.0"
+
+            }
+
             choco install haskellplatform -version 2014.2.0.0 -y
 
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
@@ -49,32 +75,12 @@
 
             }
 
-            if ($env:BOND_BUILD -eq "C++") {
-
-                git submodule update --init
-
-                if (!(Test-Path boost.7z)) {
-
-                    echo "Downloading Boost 1.${env:BOND_BOOST} ..."
-
-                    Start-FileDownload "http://iweb.dl.sourceforge.net/project/boost/boost/1.${env:BOND_BOOST}.0/boost_1_${env:BOND_BOOST}_0.7z" -FileName boost.7z -Timeout 1200000
-
-                }
-
-                echo "Extracting Boost..."
-
-                7z x boost.7z -y -o"${env:APPVEYOR_BUILD_FOLDER}" "boost_1_${env:BOND_BOOST}_0/boost" > $null
-
-                $env:BOOST_ROOT = "${env:APPVEYOR_BUILD_FOLDER}/boost_1_${env:BOND_BOOST}_0"
-
-            }
-
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
 
     cache:
         - cs\packages -> cs\test\core\packages.config
         - compiler\.cabal-sandbox -> compiler\bond.cabal
-        - boost.7z
+        - boost.exe
 
     before_build:
         - ps: >-
@@ -90,7 +96,11 @@
 
                 cd build
 
-                cmake -G $env:BOND_VS ..
+                Wait-Process -name boost
+
+                dir "${env:BOOST_LIBRARYDIR}\\*.*"
+
+                cmake "-DBoost_ADDITIONAL_VERSIONS=1.${env:BOND_BOOST}.0" -G $env:BOND_CMAKE_GENERATOR ..
 
             }
 
