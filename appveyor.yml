@@ -57,7 +57,7 @@
 
                 $env:BOOST_ROOT = "${env:APPVEYOR_BUILD_FOLDER}/boost_1_${env:BOND_BOOST}_0"
 
-                $env:BOOST_LIBRARYDIR = "${env:BOND_ROOT}/lib${BOND_MSC_BITS}-msvc-${env:BOND_MSC_VER}.0"
+                $env:BOOST_LIBRARYDIR = "${env:BOOST_ROOT}/lib${env:BOND_MSC_BITS}-msvc-${env:BOND_MSC_VER}.0"
 
             }
 
