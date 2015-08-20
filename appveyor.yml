@@ -49,7 +49,7 @@
 
                 echo "Extracting Boost..."
 
-                start-process 7z x boost.7z -y -o"${env:APPVEYOR_BUILD_FOLDER}" "boost_1_${env:BOND_BOOST}_0/boost"
+                start-process 7z -ArgumentList x boost.7z -y -o"${env:APPVEYOR_BUILD_FOLDER}" "boost_1_${env:BOND_BOOST}_0/boost"
 
                 $env:BOOST_ROOT = "${env:APPVEYOR_BUILD_FOLDER}/boost_1_${env:BOND_BOOST}_0"
 
