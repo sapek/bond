@@ -21,8 +21,6 @@
         matrix:
             - BOND_BUILD: C++
               BOND_CMAKE_GENERATOR: "Visual Studio 14 2015 Win64"
-              BOND_MSC_VER: 14
-              BOND_MSC_BITS: 64
               BOND_BOOST: 59
             - BOND_BUILD: C#
               BOND_OUTPUT: Properties
@@ -30,8 +28,6 @@
             - BOND_BUILD: Doc
             - BOND_BUILD: C++
               BOND_CMAKE_GENERATOR: "Visual Studio 12 2013"
-              BOND_MSC_VER: 12
-              BOND_MSC_BITS: 32
               BOND_BOOST: 55
             - BOND_BUILD: C#
               BOND_OUTPUT: Fields
@@ -43,21 +39,17 @@
 
                 git submodule update --init
 
-                if (!(Test-Path boost.exe)) {
+                if (!(Test-Path boost.7z)) {
 
                     echo "Downloading Boost 1.${env:BOND_BOOST} ..."
 
-                    Start-FileDownload "http://iweb.dl.sourceforge.net/project/boost/boost-binaries/1.${env:BOND_BOOST}.0/boost_1_${env:BOND_BOOST}_0-msvc-${env:BOND_MSC_VER}.0-${env:BOND_MSC_BITS}.exe" -FileName boost.exe -Timeout 1200000
-
-                } else {
-
-                    $env:BOOST_LIBRARYDIR = "${env:BOOST_ROOT}/lib${env:BOND_MSC_BITS}-msvc-${env:BOND_MSC_VER}.0"
+                    Start-FileDownload "http://iweb.dl.sourceforge.net/project/boost/boost/1.${env:BOND_BOOST}.0/boost_1_${env:BOND_BOOST}_0.7z" -FileName boost.7z -Timeout 1200000
 
                 }
 
                 echo "Extracting Boost..."
 
-                .\boost.exe /DIR="${env:APPVEYOR_BUILD_FOLDER}\\boost_1_${env:BOND_BOOST}_0" /VERYSILENT
+                start-process 7z x boost.7z -y -o"${env:APPVEYOR_BUILD_FOLDER}" "boost_1_${env:BOND_BOOST}_0/boost"
 
                 $env:BOOST_ROOT = "${env:APPVEYOR_BUILD_FOLDER}/boost_1_${env:BOND_BOOST}_0"
 
@@ -82,7 +74,7 @@
     cache:
         - cs\packages -> cs\test\core\packages.config
         - compiler\.cabal-sandbox -> compiler\bond.cabal
-        - boost.exe
+        - boost.7z
 
     before_build:
         - ps: >-
@@ -98,7 +90,7 @@
 
                 cd build
 
-                Wait-Process -name boost
+                Wait-Process -name 7z
 
                 cmake "-DBoost_ADDITIONAL_VERSIONS=1.${env:BOND_BOOST}.0" -G $env:BOND_CMAKE_GENERATOR ..
 
