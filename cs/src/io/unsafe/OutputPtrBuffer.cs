@@ -15,8 +15,8 @@ namespace Bond.IO.Unsafe
     public sealed unsafe class OutputPtrBuffer : IOutputStream
     {
         const int BlockCopyMin = 32;
-        readonly byte* data;
-        readonly int end;
+        readonly byte* buffer;
+        readonly int length;
         int position;
 
         /// <summary>
@@ -24,7 +24,7 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public IntPtr Data
         {
-            get { return (IntPtr)data; }
+            get { return (IntPtr)buffer; }
         }
 
         /// <summary>
@@ -40,8 +40,8 @@ namespace Bond.IO.Unsafe
         {
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            data = (byte*)buffer;
-            end = length;
+            this.buffer = (byte*)buffer;
+            this.length = length;
             position = 0;
         }
 
@@ -52,12 +52,12 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteUInt8(byte value)
         {
-            if (position >= end)
+            if (position >= length)
             {
                 EndOfStream(sizeof(byte));
             }
 
-            data[position++] = value;
+            buffer[position++] = value;
         }
 
         /// <summary>
@@ -65,13 +65,12 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteUInt16(ushort value)
         {
-            if (position + sizeof(ushort) > end)
+            if (position + sizeof(ushort) > length)
             {
                 EndOfStream(sizeof(ushort));
             }
 
-            byte* ptr = (data + position);
-            *((ushort*)ptr) = value;
+            *((ushort*)(buffer + position)) = value;
             position += sizeof(ushort);
         }
 
@@ -80,13 +79,12 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteUInt32(uint value)
         {
-            if (position + sizeof(uint) > end)
+            if (position + sizeof(uint) > length)
             {
                 EndOfStream(sizeof(uint));
             }
 
-            byte* ptr = (data + position);
-            *((uint*)ptr) = value;
+            *((uint*)(buffer + position)) = value;
             position += sizeof(uint);
         }
 
@@ -95,13 +93,12 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteUInt64(ulong value)
         {
-            if (position + sizeof(ulong) > end)
+            if (position + sizeof(ulong) > length)
             {
                 EndOfStream(sizeof(ulong));
             }
 
-            byte* ptr = (data + position);
-            *((ulong*)ptr) = value;
+            *((ulong*)(buffer + position)) = value;
             position += sizeof(ulong);
         }
 
@@ -110,13 +107,12 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteFloat(float value)
         {
-            if (position + sizeof(float) > end)
+            if (position + sizeof(float) > length)
             {
                 EndOfStream(sizeof(float));
             }
 
-            byte* ptr = (data + position);
-            *((float*)ptr) = value;
+            *((float*)(buffer + position)) = value;
             position += sizeof(float);
         }
 
@@ -125,13 +121,12 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteDouble(double value)
         {
-            if (position + sizeof(double) > end)
+            if (position + sizeof(double) > length)
             {
                 EndOfStream(sizeof(double));
             }
 
-            byte* ptr = (data + position);
-            *((double*)ptr) = value;
+            *((double*)(buffer + position)) = value;
             position += sizeof(double);
         }
 
@@ -142,7 +137,7 @@ namespace Bond.IO.Unsafe
         public void WriteBytes(ArraySegment<byte> bytes)
         {
             var newOffset = position + bytes.Count;
-            if (newOffset > end)
+            if (newOffset > length)
             {
                 EndOfStream(bytes.Count);
             }
@@ -151,13 +146,12 @@ namespace Bond.IO.Unsafe
             {
                 for (int i = position, j = bytes.Offset; i < newOffset; ++i, ++j)
                 {
-                    data[i] = bytes.Array[j];
+                    buffer[i] = bytes.Array[j];
                 }
             }
             else
             {
-                IntPtr pointer = (IntPtr) (data + position);
-                Marshal.Copy(bytes.Array, bytes.Offset, pointer, bytes.Count);
+                Marshal.Copy(bytes.Array, bytes.Offset, (IntPtr)(buffer + position), bytes.Count);
             }
 
             position = newOffset;
@@ -168,11 +162,11 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteVarUInt16(ushort value)
         {
-            if (position + IntegerHelper.MaxBytesVarInt16 > end)
+            if (position + IntegerHelper.MaxBytesVarInt16 > length)
             {
                 EndOfStream(IntegerHelper.MaxBytesVarInt16);
             }
-            position = IntegerHelper.EncodeVarUInt16(data, value, position);
+            position = IntegerHelper.EncodeVarUInt16(buffer, value, position);
         }
 
         /// <summary>
@@ -180,11 +174,11 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteVarUInt32(uint value)
         {
-            if (position + IntegerHelper.MaxBytesVarInt32 > end)
+            if (position + IntegerHelper.MaxBytesVarInt32 > length)
             {
                 EndOfStream(IntegerHelper.MaxBytesVarInt32);
             }
-            position = IntegerHelper.EncodeVarUInt32(data, value, position);
+            position = IntegerHelper.EncodeVarUInt32(buffer, value, position);
         }
 
         /// <summary>
@@ -192,11 +186,11 @@ namespace Bond.IO.Unsafe
         /// </summary>
         public void WriteVarUInt64(ulong value)
         {
-            if (position + IntegerHelper.MaxBytesVarInt64 > end)
+            if (position + IntegerHelper.MaxBytesVarInt64 > length)
             {
                 EndOfStream(IntegerHelper.MaxBytesVarInt64);
             }
-            position = IntegerHelper.EncodeVarUInt64(data, value, position);
+            position = IntegerHelper.EncodeVarUInt64(buffer, value, position);
         }
 
         /// <summary>
@@ -207,14 +201,14 @@ namespace Bond.IO.Unsafe
         /// <param name="size">Size in bytes of encoded string</param>
         public void WriteString(Encoding encoding, string value, int size)
         {
-            if (position + size > end)
+            if (position + size > length)
             {
                 EndOfStream(size);
             }
 
             fixed (char* valuePtr = value)
             {
-                position += encoding.GetBytes(valuePtr, value.Length, data + position, end - position);
+                position += encoding.GetBytes(valuePtr, value.Length, buffer + position, length - position);
             }
         }
 
