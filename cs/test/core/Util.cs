@@ -276,7 +276,7 @@ namespace UnitTest
             return output.Data;
         }
 
-        public static IntPtr SerializeUnsafeCBWithPtr<T>(T obj)
+        public static IntPtr SerializeUnmanagedCB<T>(T obj)
         {
             var ptr = RMarshal.AllocHGlobal(UnsafeBufferSize);
             var output = new OutputPtrBuffer(ptr, UnsafeBufferSize);
@@ -319,7 +319,7 @@ namespace UnitTest
             return Deserialize<T>.From(reader);
         }
 
-        public static T DeserializeUnsafeCBWithPtr<T>(IntPtr data, int length)
+        public static T DeserializeUnmanagedCB<T>(IntPtr data, int length)
         {
             var input = new InputPtrBuffer(data, length);
             var reader = new CompactBinaryReader<InputPtrBuffer>(input);
@@ -414,7 +414,7 @@ namespace UnitTest
             return Deserialize<T>.From(reader);
         }
 
-        public static T DeserializeUnsafeFBWithPtr<T>(IntPtr data, int length)
+        public static T DeserializeUnmanagedFB<T>(IntPtr data, int length)
         {
             var input = new InputPtrBuffer(data, length);
             var reader = new FastBinaryReader<InputPtrBuffer>(input);
@@ -492,7 +492,7 @@ namespace UnitTest
             return deserializer.Deserialize<To>(reader);
         }
 
-        public static To DeserializeUnsafeSPWithPtr<From, To>(IntPtr data, int length)
+        public static To DeserializeUnmanagedSP<From, To>(IntPtr data, int length)
         {
             var input = new InputPtrBuffer(data, length);
             var reader = new SimpleBinaryReader<InputPtrBuffer>(input);
@@ -586,8 +586,8 @@ namespace UnitTest
         public delegate void MarshalMemory<From>(Func<From, ArraySegment<byte>> serialize);
         public delegate void TranscodeStream<From, To>(Action<From, Stream> serialize, Action<Stream, Stream> transcode, Func<Stream, To> deserialize);
         public delegate void RoundtripMemory<From, To>(Func<From, ArraySegment<byte>> serialize, Func<ArraySegment<byte>, To> deserialize);
-        public delegate void RoundtripPtr<From, To>(Func<From, IntPtr> serialize, Func<IntPtr, int, To> deserialize);
-        public delegate void RoundtripMemoryPtr<From, To>(Func<From, ArraySegment<byte>> serialize, Func<IntPtr, int, To> deserialize);
+        public delegate void RoundtripUnmanaged<From, To>(Func<From, IntPtr> serialize, Func<IntPtr, int, To> deserialize);
+        public delegate void RoundtripManagedUnmanaged<From, To>(Func<From, ArraySegment<byte>> serialize, Func<IntPtr, int, To> deserialize);
 
         public static void AllSerializeDeserialize<From, To>(From from, bool noTranscoding = false)
             where From : class
@@ -600,7 +600,7 @@ namespace UnitTest
                 Assert.IsTrue(from.IsEqual(to));
             };
 
-            RoundtripPtr<From, To> ptrRoundtrip = (serialize, deserialize) =>
+            RoundtripUnmanaged<From, To> unmanagedRoundtrip = (serialize, deserialize) =>
             {
                 var data = serialize(from);
                 var to = deserialize(data, UnsafeBufferSize);
@@ -608,7 +608,7 @@ namespace UnitTest
                 Assert.IsTrue(from.IsEqual(to));
             };
 
-            RoundtripMemoryPtr<From, To> memoryPtrRoundtrip = (serialize, deserialize) =>
+            RoundtripManagedUnmanaged<From, To> managedUnmanagedRoundtrip = (serialize, deserialize) =>
             {
                 var data = serialize(from);
                 var pinned = GCHandle.Alloc(data.Array, GCHandleType.Pinned);
@@ -666,11 +666,11 @@ namespace UnitTest
             streamRoundtrip(SerializeCB, DeserializeCB<To>);
             memoryRoundtrip(SerializeUnsafeCB, DeserializeSafeCB<To>);
             memoryRoundtrip(SerializeUnsafeCB, DeserializeUnsafeCB<To>);
-            memoryPtrRoundtrip(SerializeUnsafeCB, DeserializeUnsafeCBWithPtr<To>);
-            ptrRoundtrip(SerializeUnsafeCBWithPtr, DeserializeUnsafeCBWithPtr<To>);
+            managedUnmanagedRoundtrip(SerializeUnsafeCB, DeserializeUnmanagedCB<To>);
+            unmanagedRoundtrip(SerializeUnmanagedCB, DeserializeUnmanagedCB<To>);
             memoryRoundtrip(SerializeSafeCB, DeserializeSafeCB<To>);
             memoryRoundtrip(SerializeSafeCB, DeserializeUnsafeCB<To>);
-            memoryPtrRoundtrip(SerializeSafeCB, DeserializeUnsafeCBWithPtr<To>);
+            managedUnmanagedRoundtrip(SerializeSafeCB, DeserializeUnmanagedCB<To>);
 
             streamMarshal(MarshalCB);
             streamMarshal(SerializerMarshalCB);
@@ -692,7 +692,7 @@ namespace UnitTest
             streamRoundtrip(SerializeFB, DeserializeFB<To>);
             memoryRoundtrip(SerializeFB, DeserializeSafeFB<To>);
             memoryRoundtrip(SerializeFB, DeserializeUnsafeFB<To>);
-            memoryPtrRoundtrip(SerializeFB, DeserializeUnsafeFBWithPtr<To>);
+            managedUnmanagedRoundtrip(SerializeFB, DeserializeUnmanagedFB<To>);
 
             streamMarshal(MarshalFB);
             streamMarshal(SerializerMarshalFB);
@@ -716,7 +716,7 @@ namespace UnitTest
                 streamRoundtrip(SerializeSP, DeserializeSP<From, To>);
                 memoryRoundtrip(SerializeSP, DeserializeSafeSP<From, To>);
                 memoryRoundtrip(SerializeSP, DeserializeUnsafeSP<From, To>);
-                memoryPtrRoundtrip(SerializeSP, DeserializeUnsafeSPWithPtr<From, To>);
+                managedUnmanagedRoundtrip(SerializeSP, DeserializeUnmanagedSP<From, To>);
 
                 streamTranscode(SerializeCB, TranscodeCBSP<From>, DeserializeSP<From, To>);
                 streamTranscode(SerializeFB, TranscodeFBSP<From>, DeserializeSP<From, To>);
