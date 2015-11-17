@@ -14,6 +14,7 @@ namespace Bond.IO.Unsafe
     /// </summary>
     public sealed unsafe class OutputPtrBuffer : IOutputStream
     {
+        const int BlockCopyMin = 32;
         readonly byte* data;
         readonly int end;
         int position;
@@ -146,8 +147,18 @@ namespace Bond.IO.Unsafe
                 EndOfStream(bytes.Count);
             }
 
-            IntPtr pointer = (IntPtr)(data + position);
-            Marshal.Copy(bytes.Array, bytes.Offset, pointer, bytes.Count);
+            if (bytes.Count < BlockCopyMin)
+            {
+                for (int i = position, j = bytes.Offset; i < newOffset; ++i, ++j)
+                {
+                    data[i] = bytes.Array[j];
+                }
+            }
+            else
+            {
+                IntPtr pointer = (IntPtr) (data + position);
+                Marshal.Copy(bytes.Array, bytes.Offset, pointer, bytes.Count);
+            }
 
             position = newOffset;
         }
