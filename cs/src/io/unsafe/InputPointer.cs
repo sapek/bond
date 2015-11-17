@@ -13,17 +13,17 @@ namespace Bond.IO.Unsafe
     /// <summary>
     /// Implements IInputStream on top of unmanaged memory buffer
     /// </summary>
-    public unsafe sealed class InputPtrBuffer : IInputStream, ICloneable<InputPtrBuffer>
+    public unsafe sealed class InputPointer : IInputStream, ICloneable<InputPointer>
     {
         readonly byte* buffer;
         readonly int end;
         int position;
 
-        public InputPtrBuffer(IntPtr data, int length)
+        public InputPointer(IntPtr data, int length)
             : this((byte*)data, length)
         { }
 
-        public InputPtrBuffer(byte* data, int length)
+        public InputPointer(byte* data, int length)
         {
             Debug.Assert(BitConverter.IsLittleEndian);
 
@@ -35,9 +35,9 @@ namespace Bond.IO.Unsafe
         /// <summary>
         /// Create a clone of the current state of the buffer
         /// </summary>
-        public InputPtrBuffer Clone()
+        public InputPointer Clone()
         {
-            return new InputPtrBuffer(buffer + position, end - position);
+            return new InputPointer(buffer + position, end - position);
         }
 
         #region IInputStream

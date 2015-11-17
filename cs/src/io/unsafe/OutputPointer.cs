@@ -12,7 +12,7 @@ namespace Bond.IO.Unsafe
     /// <summary>
     /// Implements IOutputStream on top of unmanaged memory buffer
     /// </summary>
-    public sealed unsafe class OutputPtrBuffer : IOutputStream
+    public sealed unsafe class OutputPointer : IOutputStream
     {
         const int BlockCopyMin = 32;
         readonly byte* buffer;
@@ -27,11 +27,11 @@ namespace Bond.IO.Unsafe
             get { return (IntPtr)buffer; }
         }
 
-        public OutputPtrBuffer(IntPtr buffer, int length)
+        public OutputPointer(IntPtr buffer, int length)
             : this((byte*)buffer, length)
         { }
 
-        public OutputPtrBuffer(byte* buffer, int length)
+        public OutputPointer(byte* buffer, int length)
         {
             Debug.Assert(BitConverter.IsLittleEndian);
 
