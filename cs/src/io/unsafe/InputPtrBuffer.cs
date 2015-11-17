@@ -19,47 +19,50 @@ namespace Bond.IO.Unsafe
         readonly int end;
         int position;
 
-        public long Length
-        {
-            get { return end; }
-        }
-
-        public long Position
-        {
-            get { return position; }
-            set { position = checked((int)value); }
-        }
-
         public InputPtrBuffer(IntPtr data, int length)
-            : this(data, 0, length)
+            : this((byte*)data, length)
         { }
 
-        public InputPtrBuffer(IntPtr data, int offset, int length)
+        public InputPtrBuffer(byte* data, int length)
         {
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            buffer = (byte*)data + offset;
+            buffer = data;
             end = length;
             position = 0;
         }
-
-        internal InputPtrBuffer(InputPtrBuffer that)
-            : this((IntPtr)that.buffer, that.position, that.end - that.position)
-        { }
 
         /// <summary>
         /// Create a clone of the current state of the buffer
         /// </summary>
         public InputPtrBuffer Clone()
         {
-            return new InputPtrBuffer(this);
+            return new InputPtrBuffer(buffer + position, end - position);
+        }
+
+        #region IInputStream
+
+        /// <summary>
+        /// Gets the length in bytes of the buffer
+        /// </summary>
+        public long Length
+        {
+            get { return end; }
         }
 
         /// <summary>
-        /// Skip forward specified number ot bytes
+        /// Gets or sets the position within the buffer
+        /// </summary>
+        public long Position
+        {
+            get { return position; }
+            set { position = checked((int)value); }
+        }
+
+        /// <summary>
+        /// Skip forward specified number of bytes
         /// </summary>
         /// <param name="count">Number of bytes to skip</param>
-        /// <exception cref="EndOfStreamException"/>
         public void SkipBytes(int count)
         {
             position += count;
@@ -173,8 +176,7 @@ namespace Bond.IO.Unsafe
 
             byte[] result = new byte[count];
 
-            IntPtr pointer = (IntPtr)(buffer + position);
-            RMarshal.Copy(pointer, result, 0, count);
+            RMarshal.Copy((IntPtr)(buffer + position), result, 0, count);
 
             position += count;
             return new ArraySegment<byte>(result);
@@ -237,6 +239,8 @@ namespace Bond.IO.Unsafe
             return result;
         }
 
+        #endregion
+
         ulong DecodeVarUInt64Checked()
         {
             ulong raw = 0x80;
@@ -255,7 +259,7 @@ namespace Bond.IO.Unsafe
             return result;
         }
 
-        internal void EndOfStream(int count)
+        static void EndOfStream(int count)
         {
             Throw.EndOfStreamException();
         }

@@ -27,6 +27,21 @@ namespace Bond.IO.Unsafe
             get { return (IntPtr)buffer; }
         }
 
+        public OutputPtrBuffer(IntPtr buffer, int length)
+            : this((byte*)buffer, length)
+        { }
+
+        public OutputPtrBuffer(byte* buffer, int length)
+        {
+            Debug.Assert(BitConverter.IsLittleEndian);
+
+            this.buffer = buffer;
+            this.length = length;
+            position = 0;
+        }
+
+        #region IOutputStream
+
         /// <summary>
         /// Gets or sets the current position within the buffer
         /// </summary>
@@ -35,17 +50,6 @@ namespace Bond.IO.Unsafe
             get { return position; }
             set { position = checked((int)value); }
         }
-
-        public OutputPtrBuffer(IntPtr buffer, int length)
-        {
-            Debug.Assert(BitConverter.IsLittleEndian);
-
-            this.buffer = (byte*)buffer;
-            this.length = length;
-            position = 0;
-        }
-
-        #region IOutputStream
 
         /// <summary>
         /// Write 8-bit unsigned integer
@@ -214,7 +218,7 @@ namespace Bond.IO.Unsafe
 
         #endregion IOutputStream
 
-        internal void EndOfStream(int count)
+        static void EndOfStream(int count)
         {
             Throw.EndOfStreamException();
         }
