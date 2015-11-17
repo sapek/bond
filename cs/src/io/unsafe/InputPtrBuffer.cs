@@ -30,21 +30,21 @@ namespace Bond.IO.Unsafe
             set { position = checked((int)value); }
         }
 
-        public InputPtrBuffer(byte* data, int length)
+        public InputPtrBuffer(IntPtr data, int length)
             : this(data, 0, length)
         { }
 
-        public InputPtrBuffer(byte* data, int offset, int length)
+        public InputPtrBuffer(IntPtr data, int offset, int length)
         {
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            buffer = data + offset;
+            buffer = (byte*)data + offset;
             end = length;
             position = 0;
         }
 
         internal InputPtrBuffer(InputPtrBuffer that)
-            : this(that.buffer, that.position, that.end - that.position)
+            : this((IntPtr)that.buffer, that.position, that.end - that.position)
         { }
 
         /// <summary>
@@ -231,8 +231,7 @@ namespace Bond.IO.Unsafe
                 EndOfStream(size);
             }
 
-            sbyte* ptr = (sbyte*) (buffer + position);
-            var result = new string(ptr, 0, size, encoding); // TODO: Check this
+            var result = new string((sbyte*) buffer, position, size, encoding);
 
             position += size;
             return result;

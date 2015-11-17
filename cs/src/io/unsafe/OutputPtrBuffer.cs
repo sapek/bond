@@ -21,9 +21,9 @@ namespace Bond.IO.Unsafe
         /// <summary>
         /// Gets data inside the buffer
         /// </summary>
-        public byte* Data
+        public IntPtr Data
         {
-            get { return data; }
+            get { return (IntPtr)data; }
         }
 
         /// <summary>
@@ -35,20 +35,11 @@ namespace Bond.IO.Unsafe
             set { position = checked((int)value); }
         }
 
-        public OutputPtrBuffer(byte* buffer, int length)
+        public OutputPtrBuffer(IntPtr buffer, int length)
         {
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            data = buffer;
-            end = length;
-            position = 0;
-        }
-
-        public OutputPtrBuffer(byte* data, int offset, int length)
-        {
-            Debug.Assert(BitConverter.IsLittleEndian);
-
-            data = data + offset;
+            data = (byte*)buffer;
             end = length;
             position = 0;
         }
